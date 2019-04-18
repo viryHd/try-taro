@@ -8,65 +8,109 @@ import {
   CoverImage,
   Canvas
 } from "@tarojs/components";
+import { throttle } from "../../common";
+import { AtToast } from "taro-ui";
 import "./index.scss";
 
 export default class Index extends Component {
   state = {
-    btnSrc: require("../../assets/icon.jpg"),
+    btnSrc: require("../../assets/camera.png"),
     baseSrc: "",
     width: 0,
-    height: 0
+    height: 0,
+    vin: 0
   };
 
-  takePhoto = () => {
+  takePhoto = throttle(() => {
+    wx.showLoading({
+      title: "识别中"
+    });
     this.ctx.takePhoto({
+      quality: "high",
       success: res => {
         const originImg = res.tempImagePath;
-        Taro.getSystemInfo({
-          success: res => {
-            this.setState({
-              width: res.windowWidth,
-              height: res.windowHeight * 0.8
-            });
-          }
-        }).then(res => {
-          this.canvas = wx.createCanvasContext("image-canvas", this);
-          this.canvas.drawImage(originImg, 0, 0, this.width, this.height);
-          this.canvas.draw();
-          setTimeout(() => {
-            wx.canvasToTempFilePath({
-              canvasId: "image-canvas",
-              x: this.width * 0.4,
-              y: this.height * 0.15,
-              width: this.width * 0.2,
-              height: this.height * 0.7,
-              destWidth: this.width * 0.2,
-              destHeight: this.height * 0.7,
-              success: res => {
-                console.log(res.tempFilePath);
-                this.getImgToBase64(res.tempFilePath);
-              }
-            });
-          }, 1000);
-        });
+        this.canvas = wx.createCanvasContext("image-canvas", this);
+        this.canvas.drawImage(
+          originImg,
+          0,
+          0,
+          this.state.width,
+          this.state.height
+        );
+        this.canvas.draw();
+        setTimeout(() => {
+          wx.canvasToTempFilePath({
+            canvasId: "image-canvas",
+            x: this.state.width * 0.4,
+            y: this.state.height * 0.1,
+            width: this.state.width * 0.2,
+            height: this.state.height * 0.8,
+            destWidth: this.state.width * 0.2,
+            destHeight: this.state.height * 0.8,
+            success: res => {
+              this.setState({
+                baseSrc: res.tempFilePath
+              });
+              const FileSystemManager = wx.getFileSystemManager();
+              FileSystemManager.readFile({
+                filePath: res.tempFilePath,
+                encoding: "base64",
+                success: res => {
+                  this.getVin(res.data);
+                }
+              });
+            }
+          });
+        }, 500);
       }
     });
-  };
-
-  getImgToBase64 = filePath => {
-    let fs = wx.getFileSystemManager();
-    fs.readFile({
-      filePath,
-      encoding: "base64",
+    setTimeout(() => {
+      wx.hideLoading();
+    }, 3000);
+  }, 3000);
+  getVin = imgBaseStr => {
+    const dataStr = `filedata=${encodeURIComponent(imgBaseStr)}&pid=1`;
+    Taro.request({
+      url: "http://120.76.52.103:8078/OcrWeb/servlet/OcrServlet",
+      method: "POST",
+      data: dataStr,
+      header: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
       success: res => {
-        const baseImg = "data:image/jpeg;base64," + res.data;
         this.setState({
-          baseSrc: baseImg
+          baseSrc: imgBaseStr
         });
+        wx.hideLoading();
+        if (res.data.ErrorCode === "0") {
+          this.showToast({
+            title: "成功",
+            icon: "success"
+          });
+          Taro.showModal({
+            title: "vin码",
+            content: res.data.VIN,
+            cancelText: "重拍",
+            
+          });
+          this.setState({
+            vin: res.data.VIN
+          });
+        } else if (res.data.ErrorCode === "19") {
+          this.showToast({ title: "图片解析失败" });
+        } else {
+          this.showToast();
+        }
       }
     });
   };
-
+  showToast = ({ title = "请稍后再试", icon = "none", duration = 1000 }) => {
+    Taro.showToast({
+      title,
+      icon,
+      duration
+    });
+  };
   error = e => {
     console.log(e.detail);
   };
@@ -74,6 +118,14 @@ export default class Index extends Component {
 
   componentDidMount() {
     this.ctx = wx.createCameraContext();
+    wx.getSystemInfo({
+      success: res => {
+        this.setState({
+          width: res.windowWidth,
+          height: res.windowHeight * 0.8
+        });
+      }
+    });
   }
 
   componentWillUnmount() {}
@@ -86,6 +138,7 @@ export default class Index extends Component {
   };
 
   render() {
+    const { btnSrc, baseSrc, width, height, vin } = this.state;
     return (
       <View className="index">
         <View className="camera-wrapp">
@@ -112,14 +165,14 @@ export default class Index extends Component {
               </CoverView>
               <CoverView className="camera-mask-lr fl-col-40" />
             </CoverView>
-            <Canvas
-              canvas-id="image-canvas"
-              style={`width:${width}px; height:${height}px; display:none;`}
-            />
           </Camera>
         </View>
-        <View className="side-bar">
-          {/* <Image src={baseSrc} /> */}
+        <Button>{vin}</Button>
+        <View style="position:fixed;top:999999999999999999999rpx;">
+          <Canvas
+            canvas-id="image-canvas"
+            style={`width:${width}px; height:${height}px;`}
+          />
         </View>
       </View>
     );

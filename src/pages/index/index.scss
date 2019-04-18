@@ -16,10 +16,10 @@
     height: 100%;
     .camera-mask-tb {
       width: 100%;
-      flex: 15;
+      flex: 10;
     }
     .camera-view-box {
-      flex: 70;
+      flex: 80;
       width: 100%;
       position: relative;
     }
@@ -32,7 +32,12 @@
       padding-bottom: 100%;
       .camera-btn-img {
         position: absolute;
-        height: 100%;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) rotateZ(90deg);
+        transform-origin: center center;
+        width: 60%;
+        height: 60%;
       }
     }
   }

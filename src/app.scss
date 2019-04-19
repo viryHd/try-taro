@@ -13,3 +13,9 @@
   max-width: 20%;
 
 }
+button {
+  outline: none;
+  &:after {
+    display: none;
+  }
+}

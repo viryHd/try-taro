@@ -11,6 +11,18 @@
   .camera-mask-tb {
     height: 100%;
     background-color: rgba(50, 50, 50, 0.8);
+    position: relative;
+  }
+  .camera-tips {
+    background-color: transparent;
+    position: absolute;
+    left: 80px;
+    top: 10%;
+    transform: rotateZ(90deg);
+    transform-origin: left top;
+    color: #fff;
+    font-size: 40px;
+    line-height: 1.1;
   }
   .camera-mask-m {
     height: 100%;
@@ -22,6 +34,35 @@
       flex: 80;
       width: 100%;
       position: relative;
+      .camera-view-line {
+        position: absolute;
+        background-color: transparent;
+        background-color: #8bc34a;
+        &:nth-child(4n+1) {
+          top: 0;
+          left: 0;
+        }
+        &:nth-child(4n+2) {
+          top: 0;
+          right: 0;
+        }
+        &:nth-child(4n+3) {
+          bottom: 0;
+          right: 0;
+        }
+        &:nth-child(4n+4) {
+          bottom: 0;
+          left: 0;
+        }
+      }
+      .camera-view-line-h {
+        width: 40px;
+        padding-bottom: 4px;
+      }
+      .camera-view-line-v {
+        width: 4px;
+        height: 40px;
+      }
     }
     .camera-btn {
       position: absolute;

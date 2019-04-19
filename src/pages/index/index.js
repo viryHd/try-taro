@@ -20,11 +20,14 @@ export default class Index extends Component {
     height: 0,
     vin: 0
   };
-
+  // 拍照、节流
   takePhoto = throttle(() => {
-    wx.showLoading({
+    Taro.showLoading({
       title: "识别中"
     });
+    setTimeout(() => {
+      Taro.hideLoading();
+    }, 3000);
     this.ctx.takePhoto({
       quality: "high",
       success: res => {
@@ -64,10 +67,8 @@ export default class Index extends Component {
         }, 500);
       }
     });
-    setTimeout(() => {
-      wx.hideLoading();
-    }, 3000);
   }, 3000);
+  // 调vin识别接口
   getVin = imgBaseStr => {
     const dataStr = `filedata=${encodeURIComponent(imgBaseStr)}&pid=1`;
     Taro.request({
@@ -82,24 +83,36 @@ export default class Index extends Component {
           baseSrc: imgBaseStr
         });
         wx.hideLoading();
-        if (res.data.ErrorCode === "0") {
-          this.showToast({
-            title: "成功",
-            icon: "success"
-          });
-          Taro.showModal({
-            title: "vin码",
-            content: res.data.VIN,
-            cancelText: "重拍",
-            
-          });
-          this.setState({
-            vin: res.data.VIN
-          });
-        } else if (res.data.ErrorCode === "19") {
-          this.showToast({ title: "图片解析失败" });
-        } else {
-          this.showToast();
+        switch (res.data.ErrorCode) {
+          case "0":
+            const vinCode = res.data.VIN;
+            this.setState({
+              vin: vinCode
+            });
+            Taro.showModal({
+              title: "vin码",
+              content: vinCode,
+              cancelText: "重拍",
+              cancelColor: "#888",
+              confirmText: "复制",
+              success: res => {
+                if (res.confirm) {
+                  Taro.setClipboardData({
+                    data: vinCode
+                  });
+                }
+              }
+            });
+            break;
+          case "19":
+            this.showToast({ title: "未捕获到车架号信息" });
+            break;
+          case "20":
+            this.showToast({ title: "找不到该车型" });
+            break;
+          default:
+            this.showToast({});
+            break;
         }
       }
     });
@@ -153,6 +166,14 @@ export default class Index extends Component {
               <CoverView className="camera-mask-m fl-col-20 at-row at-row__direction--column">
                 <CoverView className="camera-mask-tb" />
                 <CoverView className="camera-view-box">
+                  <CoverView className="camera-view-line camera-view-line-h" />
+                  <CoverView className="camera-view-line camera-view-line-h" />
+                  <CoverView className="camera-view-line camera-view-line-h" />
+                  <CoverView className="camera-view-line camera-view-line-h" />
+                  <CoverView className="camera-view-line camera-view-line-v" />
+                  <CoverView className="camera-view-line camera-view-line-v" />
+                  <CoverView className="camera-view-line camera-view-line-v" />
+                  <CoverView className="camera-view-line camera-view-line-v" />
                   <CoverView className="camera-btn">
                     <CoverImage
                       className="camera-btn-img"
@@ -163,7 +184,11 @@ export default class Index extends Component {
                 </CoverView>
                 <CoverView className="camera-mask-tb" />
               </CoverView>
-              <CoverView className="camera-mask-lr fl-col-40" />
+              <CoverView className="camera-mask-lr fl-col-40">
+                <CoverView className="camera-tips">
+                  请确保车架号在相框内
+                </CoverView>
+              </CoverView>
             </CoverView>
           </Camera>
         </View>

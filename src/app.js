@@ -15,7 +15,7 @@ class App extends Component {
   config = {
     pages: [
       'pages/index/index',
-      'pages/canvas/index',
+      'pages/clip/index'
     ],
     window: {
       backgroundTextStyle: 'light',

@@ -1,204 +1,47 @@
 import Taro, { Component } from "@tarojs/taro";
-import {
-  View,
-  Button,
-  Image,
-  Camera,
-  CoverView,
-  CoverImage,
-  Canvas
-} from "@tarojs/components";
-import { throttle } from "../../common";
-import { AtToast } from "taro-ui";
-import "./index.scss";
-
+import { View, Button, Image } from "@tarojs/components";
 export default class Index extends Component {
-  state = {
-    btnSrc: require("../../assets/camera.png"),
-    baseSrc: "",
-    width: 0,
-    height: 0,
-    vin: 0
-  };
-  // 拍照、节流
-  takePhoto = throttle(() => {
-    Taro.showLoading({
-      title: "识别中"
-    });
-    setTimeout(() => {
-      Taro.hideLoading();
-    }, 3000);
-    this.ctx.takePhoto({
-      quality: "high",
-      success: res => {
-        const originImg = res.tempImagePath;
-        this.canvas = wx.createCanvasContext("image-canvas", this);
-        this.canvas.drawImage(
-          originImg,
-          0,
-          0,
-          this.state.width,
-          this.state.height
-        );
-        this.canvas.draw();
-        setTimeout(() => {
-          wx.canvasToTempFilePath({
-            canvasId: "image-canvas",
-            x: this.state.width * 0.4,
-            y: this.state.height * 0.1,
-            width: this.state.width * 0.2,
-            height: this.state.height * 0.8,
-            destWidth: this.state.width * 0.2,
-            destHeight: this.state.height * 0.8,
-            success: res => {
-              this.setState({
-                baseSrc: res.tempFilePath
-              });
-              const FileSystemManager = wx.getFileSystemManager();
-              FileSystemManager.readFile({
-                filePath: res.tempFilePath,
-                encoding: "base64",
-                success: res => {
-                  this.getVin(res.data);
-                }
-              });
-            }
-          });
-        }, 500);
-      }
-    });
-  }, 3000);
-  // 调vin识别接口
-  getVin = imgBaseStr => {
-    const dataStr = `filedata=${encodeURIComponent(imgBaseStr)}&pid=1`;
-    Taro.request({
-      url: "http://120.76.52.103:8078/OcrWeb/servlet/OcrServlet",
-      method: "POST",
-      data: dataStr,
-      header: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      success: res => {
-        this.setState({
-          baseSrc: imgBaseStr
-        });
-        wx.hideLoading();
-        switch (res.data.ErrorCode) {
-          case "0":
-            const vinCode = res.data.VIN;
-            this.setState({
-              vin: vinCode
-            });
-            Taro.showModal({
-              title: "vin码",
-              content: vinCode,
-              cancelText: "重拍",
-              cancelColor: "#888",
-              confirmText: "复制",
-              success: res => {
-                if (res.confirm) {
-                  Taro.setClipboardData({
-                    data: vinCode
-                  });
-                }
-              }
-            });
-            break;
-          case "19":
-            this.showToast({ title: "未捕获到车架号信息" });
-            break;
-          case "20":
-            this.showToast({ title: "找不到该车型" });
-            break;
-          default:
-            this.showToast({});
-            break;
-        }
-      }
-    });
-  };
-  showToast = ({ title = "请稍后再试", icon = "none", duration = 1000 }) => {
-    Taro.showToast({
-      title,
-      icon,
-      duration
-    });
-  };
-  error = e => {
-    console.log(e.detail);
-  };
-  componentWillMount() {}
-
-  componentDidMount() {
-    this.ctx = wx.createCameraContext();
-    wx.getSystemInfo({
-      success: res => {
-        this.setState({
-          width: res.windowWidth,
-          height: res.windowHeight * 0.8
-        });
-      }
-    });
-  }
-
-  componentWillUnmount() {}
-
-  componentDidShow() {}
-
-  componentDidHide() {}
   config = {
-    navigationBarTitleText: "首页"
+    navigationBarTitleText: "主页"
+  };
+  state = {
+    isHidden: false,
+    cameraBtn: require("../../assets/camera.png"),
+    albumBtn: require("../../assets/album.png")
+  };
+  takePhoto = () => {
+    Taro.navigateTo({
+      url: "../takePhoto/index"
+    });
+  };
+  clipPhoto = () => {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ["original"],
+      sourceType: ["album"],
+      success: res => {
+        wx.setStorageSync("tempPath", res.tempFilePaths[0]);
+        Taro.navigateTo({
+          url: "../clipPhoto/index"
+        });
+      }
+    });
   };
 
+  componentDidMount() {}
   render() {
-    const { btnSrc, baseSrc, width, height, vin } = this.state;
     return (
-      <View className="index">
-        <View className="camera-wrapp">
-          <Camera
-            device-position="back"
-            flash="off"
-            onError={this.error}
-            style="width: 100%; height: 100%;"
-          >
-            <CoverView className="camera-mask at-row">
-              <CoverView className="camera-mask-lr fl-col-40" />
-              <CoverView className="camera-mask-m fl-col-20 at-row at-row__direction--column">
-                <CoverView className="camera-mask-tb" />
-                <CoverView className="camera-view-box">
-                  <CoverView className="camera-view-line camera-view-line-h" />
-                  <CoverView className="camera-view-line camera-view-line-h" />
-                  <CoverView className="camera-view-line camera-view-line-h" />
-                  <CoverView className="camera-view-line camera-view-line-h" />
-                  <CoverView className="camera-view-line camera-view-line-v" />
-                  <CoverView className="camera-view-line camera-view-line-v" />
-                  <CoverView className="camera-view-line camera-view-line-v" />
-                  <CoverView className="camera-view-line camera-view-line-v" />
-                  <CoverView className="camera-btn">
-                    <CoverImage
-                      className="camera-btn-img"
-                      src={btnSrc}
-                      onClick={this.takePhoto}
-                    />
-                  </CoverView>
-                </CoverView>
-                <CoverView className="camera-mask-tb" />
-              </CoverView>
-              <CoverView className="camera-mask-lr fl-col-40">
-                <CoverView className="camera-tips">
-                  请确保车架号在相框内
-                </CoverView>
-              </CoverView>
-            </CoverView>
-          </Camera>
-        </View>
-        <Button>{vin}</Button>
-        <View style="position:fixed;top:999999999999999999999rpx;">
-          <Canvas
-            canvas-id="image-canvas"
-            style={`width:${width}px; height:${height}px;`}
-          />
-        </View>
+      <View>
+        <Image
+          src={cameraBtn}
+          style="width: 200px; height: 200px;"
+          onClick={this.takePhoto}
+        />
+        <Image
+          src={albumBtn}
+          style="width: 200px; height: 200px;"
+          onClick={this.clipPhoto}
+        />
       </View>
     );
   }

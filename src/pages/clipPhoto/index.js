@@ -21,11 +21,6 @@ export default class Clip extends Component {
     W: 0,
     H: 0,
     vin: "",
-    preView: {
-      path: require("../../assets/camera.png"),
-      w: 50,
-      h: 50
-    },
     imgInfo: {
       path: "",
       w: 0,
@@ -142,7 +137,7 @@ export default class Clip extends Component {
     const w = imgInfo.w;
     const h = imgInfo.h;
     // 获取凸边形的点
-    convexDots = convexHull(orderedDots, orderedDots.length);
+    convexDots = convexHull(orderedDots);
     // 四个点组成的四边形是不是凸四边形
     let canCrop = convexDots.length == 4;
     if (callback) {
@@ -155,7 +150,7 @@ export default class Clip extends Component {
     let ctx = wx.createCanvasContext("move-canvas");
     //绘制选中边框
     // 如果四个点组成的四边形不是凸四边形，则显示红色，表示不可取
-    let color = canCrop ? "white" : "red";
+    let color = canCrop ? "rgba(0,0,0,0.8)" : "red";
     ctx.setStrokeStyle(color);
     ctx.setLineWidth(2);
     ctx.beginPath();
@@ -278,22 +273,54 @@ export default class Clip extends Component {
         destHeight: cropRect.h,
         canvasId: "img-canvas",
         success: res => {
-          wx.hideLoading();
-          wx.previewImage({
-            urls: [res.tempFilePath] // 需要预览的图片http链接列表
-          })
-          const FileSystemManager = wx.getFileSystemManager();
-          FileSystemManager.readFile({
-            filePath: res.tempFilePath,
-            encoding: "base64",
-            success: res => {
-              getVinCode(res.data)
+          const vinImg = res.tempFilePath;
+          getVinCode(vinImg).then(res => {
+            console.log(res);
+            if (res.data.ErrorCode === "0") {
+              const vin = res.data.VIN;
+              Taro.showModal({
+                title: "vin码",
+                content: vin,
+                cancelText: "取消",
+                cancelColor: "#888",
+                confirmText: "确认",
+                success: res => {
+                  if (res.confirm) {
+                    // Taro.setClipboardData({
+                    //   data: vin
+                    // });
+                    // 清除本地
+                    wx.removeStorageSync('tempPath');
+                    wx.setStorageSync("vin", vin);
+                    Taro.redirectTo({
+                      url: "../result/index"
+                    });
+                  }
+                }
+              });
+            } else {
+              wx.setStorageSync("tempPath", vinImg);
+              Taro.redirectTo({
+                url: "../vinFail/index"
+              });
             }
           });
         }
       });
     });
   }, 3000);
+
+  chooseImage = () => {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ["original"],
+      sourceType: ["album"],
+      success: res => {
+        wx.setStorageSync("tempPath", res.tempFilePaths[0]);
+        this.intImage(this.state.W, this.state.H);
+      }
+    });
+  };
   componentDidMount() {
     wx.getSystemInfo({
       success: res => {
@@ -308,14 +335,7 @@ export default class Clip extends Component {
     });
   }
   render() {
-    const {
-      imgInfo,
-      W,
-      H,
-      movableItems,
-      movableItemLength,
-      preView
-    } = this.state;
+    const { imgInfo, W, H, movableItems, movableItemLength } = this.state;
     return (
       <View className="clip">
         <View className="clip-wrapp" style={`width:${W}px; height:${H}px;`}>
@@ -359,7 +379,7 @@ export default class Clip extends Component {
           </View>
         </View>
         <View className="bottom-btn">
-          <Button onClick={this.confirmImage}>重选</Button>
+          <Button onClick={this.chooseImage}>重选</Button>
           <Button onClick={this.confirmImage}>确认</Button>
         </View>
       </View>

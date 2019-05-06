@@ -1,57 +1,43 @@
 import Taro from "@tarojs/taro";
 // 调vin识别接口
-export const getVinCode = baseStr =>
+export const getVinCode = path =>
   new Promise((resolve, reject) => {
-    const str = `filedata=${encodeURIComponent(baseStr)}&pid=1`;
-    wx.request({
-      url: "http://120.76.52.103:8078/OcrWeb/servlet/OcrServlet",
-      method: "POST",
-      data: str,
-      header: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
+    const FileSystemManager = wx.getFileSystemManager();
+    FileSystemManager.readFile({
+      filePath: path,
+      encoding: "base64",
       success: res => {
-        wx.hideLoading();
-        switch (res.data.ErrorCode) {
-          case "0":
-            const vinCode = res.data.VIN;
-            Taro.showModal({
-              title: "vin码",
-              content: vinCode,
-              cancelText: "取消",
-              cancelColor: "#888",
-              confirmText: "复制",
-              success: res => {
-                if (res.confirm) {
-                  Taro.setClipboardData({
-                    data: vinCode
-                  });
-                }
-              }
-            });
-            resolve(res.data.VIN);
-            break;
-          case "19":
-            showToast({ title: "未捕获到车架号信息" });
-            break;
-          case "20":
-            showToast({ title: "找不到该车型" });
-            break;
-          default:
+        const str = `filedata=${encodeURIComponent(res.data)}&pid=1`;
+        wx.request({
+          url: "http://120.76.52.103:8078/OcrWeb/servlet/OcrServlet",
+          method: "POST",
+          data: str,
+          header: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          success: res => {
+            wx.hideLoading();
+            if (res.data.ErrorCode === "19") {
+              showToast({ title: "未捕获到车架号信息" });
+            } else if (res.data.ErrorCode === "20") {
+              showToast({ title: "找不到该车型" });
+            }else if(res.data.ErrorCode !== "0"){
+              showToast({});
+            }
+            resolve(res);
+          },
+          fail: res => {
             showToast({});
-            break;
-        }
-        resolve(res);
-      },
-      fail: res => {
-        showToast({});
+            reject(new Error("请稍后再试!"));
+          }
+        });
       }
     });
   });
- function showToast({ title = "请稍后再试", icon = "none", duration = 1500 }){
-    wx.showToast({
-      title,
-      icon,
-      duration
-    });
-  };
+function showToast({ title = "请稍后再试", icon = "none", duration = 1500 }) {
+  wx.showToast({
+    title,
+    icon,
+    duration
+  });
+}

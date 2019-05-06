@@ -2,7 +2,7 @@
   "miniprogramRoot": "./dist",
   "projectname": "erpweapp",
   "description": "1号车间",
-  "appid": "touristappid",
+  "appid": "wx47541af025a8544a",
   "setting": {
     "urlCheck": true,
     "es6": false,

@@ -44,13 +44,30 @@ export default class TakePhoto extends Component {
             destWidth: W * 0.2,
             destHeight: H * 0.8,
             success: res => {
-              const FileSystemManager = wx.getFileSystemManager();
-              FileSystemManager.readFile({
-                filePath: res.tempFilePath,
-                encoding: "base64",
-                success: res => {
-                  // 调vin识别接口
-                  getVinCode(res.data);
+              const vinImg = res.tempFilePath;
+              getVinCode(vinImg).then(res => {
+                console.log(res);
+                if (res.data.ErrorCode === "0") {
+                  const vin = res.data.VIN;
+                  Taro.showModal({
+                    title: "vin码",
+                    content: vin,
+                    cancelText: "取消",
+                    cancelColor: "#888",
+                    confirmText: "确认",
+                    success: res => {
+                      if (res.confirm) {
+                        // Taro.setClipboardData({
+                        //   data: vin
+                        // });
+                        wx.removeStorageSync("tempPath");
+                        wx.setStorageSync("vin", vin);
+                        Taro.redirectTo({
+                          url: "../result/index"
+                        });
+                      }
+                    }
+                  });
                 }
               });
             }
@@ -66,10 +83,10 @@ export default class TakePhoto extends Component {
       sizeType: "original",
       sourceType: "album",
       success: res => {
-        wx.setStorageSync('tempPath', res.tempFilePaths[0]);
+        wx.setStorageSync("tempPath", res.tempFilePaths[0]);
         Taro.navigateTo({
-          url: '../clipPhoto/index'
-        })
+          url: "../clipPhoto/index"
+        });
       }
     });
   };

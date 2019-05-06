@@ -5,7 +5,7 @@ export default class OutPage extends Component {
     url: ""
   };
   componentDidMount() {
-    const url = this.$router.params.url;
+    const {url} = this.$router.params;
     this.setState({ url });
   }
   render() {

@@ -13,10 +13,6 @@ class App extends Component {
   config = {
     pages: [
       'pages/index/index',
-      'pages/clipPhoto/index',
-      'pages/takePhoto/index',
-      'pages/vinFail/index',
-      'pages/result/index',
       'pages/outPage/index'
     ],
     window: {
@@ -24,7 +20,12 @@ class App extends Component {
       navigationBarBackgroundColor: '#fff',
       navigationBarTitleText: 'WeChat',
       navigationBarTextStyle: 'black'
-    }
+    },
+    "navigateToMiniProgramAppIdList": [
+      "wx5ecceea420cf2edd",
+      "wx1c6850423c0ff174",
+      "wx4099604b04bf38d1"
+    ]
   }
 
   componentDidMount () {}

@@ -1,78 +1,76 @@
 import Taro, { Component } from "@tarojs/taro";
-import { View, Button,Text, Image, Swiper, SwiperItem } from "@tarojs/components";
-import { AtGrid } from "taro-ui";
+import { View, Text, Image, Swiper, SwiperItem } from "@tarojs/components";
 import "./index.scss";
+import "../../assets/iconfont/iconfont.css";
 export default class Index extends Component {
   config = {
     navigationBarTitleText: "主页"
   };
   state = {
-    isHidden: false,
-    cameraBtn: require("../../assets/camera.png"),
-    albumBtn: require("../../assets/album.png"),
     banner: [{ url: "", image: "" }],
-    message: [{url: "", title: ""}]
+    message: [{ url: "", title: "" }],
+    serviceList: [
+      {
+        image: require("../../assets/camera.png"),
+        value: "vin码查询",
+        appId: "wx5ecceea420cf2edd"
+      },
+      {
+        image: require("../../assets/album.png"),
+        value: "vin码查询",
+        appId: "wx1c6850423c0ff174"
+      },
+      {
+        image: require("../../assets/album.png"),
+        value: "vin码查询",
+        appId: "wx4099604b04bf38d1"
+      }
+    ]
   };
-  takePhoto = () => {
-    Taro.navigateTo({
-      url: "../takePhoto/index"
-    });
-  };
-  clipPhoto = () => {
-    wx.chooseImage({
-      count: 1,
-      sizeType: ["original"],
-      sourceType: ["album"],
-      success: res => {
-        wx.setStorageSync("tempPath", res.tempFilePaths[0]);
-        Taro.navigateTo({
-          url: "../clipPhoto/index"
-        });
+  gridHandler = e => {
+    const appId = e.currentTarget.dataset.appid;
+    wx.navigateToMiniProgram({
+      appId,
+      path: "pages/index/index?id=123",
+      envVersion: "develop",
+      extraData: {
+        foo: "bar"
+      },
+      success(res) {
+        // 打开成功
       }
     });
   };
-  cridHandler = (item, index) => {
-    switch (index) {
-      case 0:
-        this.takePhoto();
-        break;
-      case 1:
-        this.clipPhoto();
-        break;
-      default:
-        Taro.showToast({
-          title: "敬请期待！",
-          icon: "none",
-          duration: 1500
-        });
-        break;
-    }
-  };
   init = () => {
+    // 1.广告图
     Taro.request({
       url: "https://easy-mock.com/mock/5ccf95e95f39f71a53b2c705/example/banner",
       method: "GET"
     }).then(res => {
       this.setState({ banner: res.data.data });
     });
+    // 2.资讯
     Taro.request({
-      url: "https://easy-mock.com/mock/5ccf95e95f39f71a53b2c705/example/message",
+      url:
+        "https://easy-mock.com/mock/5ccf95e95f39f71a53b2c705/example/message",
       method: "GET"
     }).then(res => {
       this.setState({ message: res.data.data });
     });
+    // 3.服务列表
   };
-  goPage = url => {
+  goPage = e => {
+    const url = e.currentTarget.dataset.url;
     Taro.navigateTo({ url: `../outPage/index?url=${url}` });
   };
   componentDidMount() {
     this.init();
   }
   render() {
-    const { cameraBtn, albumBtn, banner, message } = this.state;
+    const { banner, message, serviceList } = this.state;
     return (
       <View style="height: 500px;">
-        <View className="swiperBanner" style="width:100%; height: 200px;">
+        <View className="swiper_banner" style="width:100%; height: 200px;">
           <Swiper
             style="width:100%; height: 100%;"
             className="test-h"
@@ -86,16 +84,23 @@ export default class Index extends Component {
           >
             {banner.map(item => (
               <SwiperItem key={item.id}>
-                <View onClick={() => this.goPage(item.url)}>
-                  <Image src={item.image} />
+                <View onClick={this.goPage} data-url={item.url}>
+                  <Image src={item.image} style="width:100%;" />
                 </View>
               </SwiperItem>
             ))}
           </Swiper>
         </View>
-        <View className="swiperMessage" style="width:100%; height: 50px;">
+        <View
+          className="swiper_message"
+          style="width:100%; height: 50px;display: flex; justify-content: center;align-items:center;"
+        >
+          <View
+            className="iconfont icon-laba"
+            style="font-size:25px; color:yellowgreen;"
+          />
           <Swiper
-            style="width:100%; height: 100%;"
+            style="width:100%; height: 100%; padding-left:15px;"
             className="test-h"
             vertical
             circular
@@ -104,31 +109,39 @@ export default class Index extends Component {
             duration={300}
           >
             {message.map(item => (
-              <SwiperItem key={item.id} style="display: flex; flex-direction: column; justify-content: center;">
-                <View onClick={() => this.goPage(item.url)}>
+              <SwiperItem
+                key={item.id}
+                style="display: flex; flex-direction: column; justify-content: center;"
+              >
+                <View onClick={this.goPage} data-url={item.url}>
                   <Text>{item.title}</Text>
                 </View>
               </SwiperItem>
             ))}
           </Swiper>
         </View>
-        <View className="serviceList">
-          <AtGrid
-            onClick={this.cridHandler}
-            data={[
-              {
-                image: cameraBtn,
-                value: "vin码查询"
-              },
-              {
-                image: albumBtn,
-                value: "vin码查询"
-              },
-              {
-                value: "敬请期待"
-              }
-            ]}
-          />
+        <View className="service_list">
+          {serviceList.map(item => (
+            <View
+              className="service_item"
+              key={item.appId}
+              data-appid={item.appId}
+              onClick={this.gridHandler}
+            >
+              <View className="item_img_box">
+                <Image className="item_img" src={item.image} />
+              </View>
+              <View className="text">{item.value}</View>
+            </View>
+          ))}
+          <View className="service_item">
+          <View className="item_last">
+              <View
+                className="iconfont icon-jingqingqidai"
+              />
+              </View>
+              <View className="text" />
+          </View>
         </View>
       </View>
     );

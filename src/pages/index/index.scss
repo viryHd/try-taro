@@ -1,1 +1,53 @@
-@import "~taro-ui/dist/style/components/grid.scss";
+.swiper_message {
+  padding-left: 20px;
+}
+.service_list{
+  display: flex;
+  flex-wrap: wrap;
+  padding: 20px;
+  padding-bottom: 0;
+}
+.service_item{
+  position: relative;
+  width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 20px;
+  .item_img_box{
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+    .item_img{
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+  .item_last{
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+  }
+  .icon-jingqingqidai{
+    position: absolute;
+    font-size: 110px;
+    width: 100%;
+    text-align: center;
+    top: 50%;
+    transform: translate(0, -50%);
+  }
+  .text {
+    width: 100%;
+    height: 40px;
+    text-align: center;
+    font-size: 38px;
+    line-height: 38px;
+  }
+}
